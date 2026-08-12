@@ -159,6 +159,28 @@ Core tables (see the migration for full definitions, RLS, and seed data):
 
 **Roles (`user_role`):** `super_admin`, `sales_manager`, `repair_tech`, `solar_manager`, `customer`.
 
+## SEO
+
+The site ships a comprehensive, best-practice SEO foundation aimed at maximum organic ranking and rich-result eligibility. Everything is driven from [lib/siteConfig.ts](lib/siteConfig.ts) so identity/NAP data stays consistent.
+
+**What's implemented**
+
+- **Per-route metadata** — Each public route has unique `<title>`, description, canonical URL, and Open Graph / Twitter tags. Because the interactive pages are Client Components (which cannot export `metadata`), metadata is delivered from server `layout.tsx` wrappers around each `page.tsx`:
+  - `app/layout.tsx` — root defaults, title template `%s | RIVA HNTR Technologies`, `metadataBase`, robots directives, `viewport` export.
+  - `app/(storefront)/shop/layout.tsx`, `shop/[slug]/layout.tsx` (dynamic `generateMetadata` per product), `solar/layout.tsx`, `repairs/layout.tsx`, `track/layout.tsx`.
+- **Structured data (JSON-LD)** via [components/JsonLd.tsx](components/JsonLd.tsx):
+  - Site-wide: `Organization`, `LocalBusiness`/`Store`, `WebSite` (with `SearchAction`) — rendered in the root layout.
+  - `Product` + `BreadcrumbList` on product detail pages; `Service` on the solar and repairs pages.
+- **Crawler & discovery files**: `app/robots.ts` → `/robots.txt` (allows public routes, disallows `/admin`, `/api/`, `/cart`, `/checkout`; points to the sitemap), `app/sitemap.ts` → `/sitemap.xml` (static routes + one entry per product, with images), `app/manifest.ts` → `/manifest.webmanifest`.
+- **Social image**: `app/opengraph-image.tsx` generates a branded 1200×630 image with `next/og`; the Twitter card reuses it via `metadata.twitter.images`.
+
+**Maintaining SEO**
+
+- New public route → add a `layout.tsx` beside its `page.tsx` exporting `metadata`, and add the route to `app/sitemap.ts`.
+- New product → because the sitemap and PDP metadata read from [lib/products.ts](lib/products.ts), keep that catalog current (or wire it to the live Supabase catalog).
+- Business details (name, address, phone, geo, socials) → edit [lib/siteConfig.ts](lib/siteConfig.ts) only; the footer, metadata, and JSON-LD all consume it.
+- Set `NEXT_PUBLIC_SITE_URL` in production so canonicals, OG URLs, and the sitemap use the real origin, and add `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` to verify in Google Search Console.
+
 ## Deployment
 
 Deploy on [Vercel](https://vercel.com/new) or any Node host. Set all environment variables above in your hosting provider, point payment-gateway webhooks at:
