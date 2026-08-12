@@ -1,12 +1,13 @@
 # RIVA HNTR Technologies
 
-A premium, hybrid Next.js web platform for a laptop retail & services business. It combines **e-commerce** (new and used laptops), **lead generation** for solar installations and laptop repairs, a **universal public tracking hub**, and a **role-based access control (RBAC) admin suite**.
+A premium, hybrid Next.js web platform for **RIVA HNTR Technologies**, a laptop retail & services business based in **Ilorin, Kwara State, Nigeria**. It combines **e-commerce** (new and used laptops, computer accessories, and solar equipment), **lead generation** for solar installations and laptop repairs, a **universal public tracking hub**, and a **role-based access control (RBAC) admin suite** — all on a comprehensive SEO foundation.
 
 ---
 
 ## Features
 
-- **Product catalog & PDP** — Browse laptops with advanced filtering by condition, category, specs, and price. Product pages show condition badges (New, UK Used Grade A/B, Second-hand), inspection checklists, and battery-health bars.
+- **Product catalog & PDP** — Browse the catalog with advanced filtering by condition, category, specs, and price. The storefront is split into two **departments** — **Computers & Accessories** and **Solar & Accessories** — selectable via tabs on `/shop` and deep-linkable with `?dept=computers` / `?dept=solar`. Product pages show condition badges (New, UK Used Grade A/B, Second-hand), inspection checklists, and battery-health bars.
+- **Search-engine optimized** — Per-route titles/descriptions, canonical URLs, Open Graph + Twitter cards, a generated Open Graph image, `robots.txt`, `sitemap.xml`, a PWA manifest, and JSON-LD structured data (Organization, LocalBusiness, WebSite search action, Product, BreadcrumbList, Service). See [SEO](#seo).
 - **Hybrid checkout engine** — Payment gateway switches automatically by order total:
   - **Paystack** (card / USSD popup) for orders **≤ ₦500,000**
   - **Monnify** (virtual account bank transfer) for high-ticket orders **> ₦500,000**
