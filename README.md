@@ -37,9 +37,10 @@ A premium, hybrid Next.js web platform for **RIVA HNTR Technologies**, a laptop 
 app/
   (storefront)/           # Public storefront (shared layout)
     shop/                 # Catalog + [slug] product detail pages
-    repairs/              # Repair intake form
-    solar/                # Solar load calculator & lead form
-    track/                # Universal tracking hub
+                          #   layout.tsx wrappers add per-route metadata + JSON-LD
+    repairs/              # Repair intake form (+ layout.tsx metadata)
+    solar/                # Solar load calculator & lead form (+ layout.tsx metadata)
+    track/                # Universal tracking hub (+ layout.tsx metadata)
   admin/                  # RBAC admin suite (dashboard, inventory, repairs, solar)
   api/
     checkout/             # Order creation + Monnify transfer setup
@@ -47,14 +48,22 @@ app/
     webhooks/paystack/    # Paystack charge verification
     webhooks/monnify/     # Monnify signature verification
   cart/  checkout/        # Cart summary & gateway-switching checkout
+  robots.ts               # SEO: crawl rules + sitemap reference   → /robots.txt
+  sitemap.ts              # SEO: static routes + one entry per product → /sitemap.xml
+  manifest.ts             # PWA manifest                          → /manifest.webmanifest
+  opengraph-image.tsx     # Generated 1200×630 OG image (next/og) → /opengraph-image
   layout.tsx  page.tsx  globals.css
 components/               # Header, Footer, ProductCard, ConditionBadge,
-                          # InspectionChecklist, WhatsAppWidget
+                          # InspectionChecklist, WhatsAppWidget, JsonLd
 lib/
+  siteConfig.ts           # SEO single source of truth: NAP, departments, JSON-LD builders
+  products.ts             # Shared product catalog (powers sitemap + PDP metadata)
   supabase.ts             # Browser Supabase client (anon key)
   supabaseAdmin.ts        # Server-only client (service role key)
   paymentProcessor.ts     # Order fulfillment: verify, audit, decrement stock
   store/cartStore.ts      # Zustand cart + guest-info store
+public/
+  icon.svg                # Branded app icon (manifest + metadata icons)
 supabase/migrations/      # PostgreSQL schema, enums, RLS policies, seed data
 ```
 
@@ -94,9 +103,21 @@ MONNIFY_CONTRACT_CODE=your-monnify-contract-code
 
 # WhatsApp widget (falls back to +2348000000000 if unset)
 NEXT_PUBLIC_WHATSAPP_NUMBER=+234XXXXXXXXXX
+
+# SEO / site identity (all public; safe to expose)
+NEXT_PUBLIC_SITE_URL=https://rivahntr.com                 # canonical origin for metadata, sitemap, OG
+NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=                     # Google Search Console token (optional)
+NEXT_PUBLIC_CONTACT_PHONE=+234XXXXXXXXXX                  # displayed NAP phone (defaults if unset)
+NEXT_PUBLIC_CONTACT_EMAIL=hello@rivahntr.com             # displayed NAP email (defaults if unset)
+NEXT_PUBLIC_SOCIAL_FACEBOOK=https://facebook.com/rivahntr
+NEXT_PUBLIC_SOCIAL_INSTAGRAM=https://instagram.com/rivahntr
+NEXT_PUBLIC_SOCIAL_TWITTER=https://twitter.com/rivahntr
+NEXT_PUBLIC_TWITTER_HANDLE=@rivahntr
 ```
 
-> `SUPABASE_SERVICE_ROLE_KEY`, `PAYSTACK_SECRET_KEY`, and the Monnify secrets are used only in server code (API routes / webhooks) — never expose them to the client.
+> `SUPABASE_SERVICE_ROLE_KEY`, `PAYSTACK_SECRET_KEY`, and the Monnify secrets are used only in server code (API routes / webhooks) — never expose them to the client. The `NEXT_PUBLIC_*` variables above are intentionally public.
+
+> **Local SEO note:** business name, address, phone, and geo-coordinates (the "NAP" signals) live in [lib/siteConfig.ts](lib/siteConfig.ts) and drive both the footer and the structured data. Keep them consistent — mismatched NAP hurts local ranking.
 
 ### 3. Set up the database
 
