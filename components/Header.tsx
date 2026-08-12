@@ -3,17 +3,29 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, Laptop, ShieldAlert, Cpu, Sun } from 'lucide-react';
+import { ShoppingCart, Laptop, ShieldAlert, Cpu, Sun, UserCircle, LogIn } from 'lucide-react';
 import { useCartStore } from '@/lib/store/cartStore';
+import { supabase } from '@/lib/supabase';
 
 export default function Header() {
   const pathname = usePathname();
   const cartItems = useCartStore((state) => state.items);
   const [mounted, setMounted] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
 
-  // Prevent hydration mismatch
+  // Prevent hydration mismatch + track the auth session for the account entry point.
   useEffect(() => {
     setMounted(true);
+
+    supabase.auth.getUser().then(({ data }) => setIsAuthed(!!data.user));
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthed(!!session?.user);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const totalCartItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
@@ -61,6 +73,26 @@ export default function Header() {
 
           {/* Right Action Icons */}
           <div className="flex items-center gap-4">
+            {/* Account / Login — auth-aware, rendered after mount to avoid mismatch */}
+            {mounted &&
+              (isAuthed ? (
+                <Link
+                  href="/account"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 transition-all"
+                >
+                  <UserCircle className="w-4 h-4" />
+                  <span className="hidden sm:inline">Account</span>
+                </Link>
+              ) : (
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all hover:border-slate-600"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span className="hidden sm:inline">Login</span>
+                </Link>
+              ))}
+
             {/* Admin Area */}
             <Link
               href="/admin/dashboard"
