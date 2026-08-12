@@ -19,7 +19,7 @@ export default function Header() {
   const totalCartItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   const navLinks = [
-    { name: 'Shop Laptops', href: '/shop', icon: Cpu },
+    { name: 'Shop', href: '/shop', icon: Cpu },
     { name: 'Repairs & Servicing', href: '/repairs', icon: Laptop },
     { name: 'Solar Energy', href: '/solar', icon: Sun },
     { name: 'Track Order', href: '/track', icon: ShieldAlert },
