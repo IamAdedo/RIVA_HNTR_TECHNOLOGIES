@@ -32,11 +32,17 @@ export default function RepairsPage() {
       const rand = Math.floor(1000 + Math.random() * 9000);
       const ticketNumber = `REP-${year}-${rand}`;
 
+      // Link to the account if signed in; otherwise it's a guest ticket.
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       // Insert Repair Ticket into Supabase
       const { data, error: sbError } = await supabase
         .from('repair_tickets')
         .insert({
           ticket_number: ticketNumber,
+          customer_id: user?.id ?? null,
           device_model: deviceModel,
           fault_description: faultDescription,
           guest_info: { name, email, phone },
