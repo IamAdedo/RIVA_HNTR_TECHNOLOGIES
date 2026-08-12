@@ -29,6 +29,7 @@ A premium, hybrid Next.js web platform for **RIVA HNTR Technologies**, a laptop 
 | State | `zustand` (persistent cart store) |
 | Backend / DB | [Supabase](https://supabase.com) (PostgreSQL, RLS, auth-sync triggers) |
 | Payments | Paystack + Monnify |
+| SEO | Next.js Metadata API, `robots.ts` / `sitemap.ts` / `manifest.ts`, `next/og` OG image, JSON-LD structured data |
 
 ## Project Structure
 
