@@ -114,11 +114,17 @@ export default function SolarPage() {
       const rand = Math.floor(1000 + Math.random() * 9000);
       const projectNumber = `SOL-${year}-${rand}`;
 
+      // Link to the account if signed in; otherwise it's a guest lead.
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       // Insert Solar Lead into Supabase
       const { data, error: sbError } = await supabase
         .from('solar_projects')
         .insert({
           project_number: projectNumber,
+          customer_id: user?.id ?? null,
           property_type: propertyType,
           power_load_appliances: appliances,
           recommended_kva: recommendation.kva,
