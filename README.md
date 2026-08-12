@@ -2,8 +2,6 @@
 
 A premium, hybrid Next.js web platform for a laptop retail & services business. It combines **e-commerce** (new and used laptops), **lead generation** for solar installations and laptop repairs, a **universal public tracking hub**, and a **role-based access control (RBAC) admin suite**.
 
-> **Note on Next.js:** This project runs a version of Next.js with breaking changes from older releases. Before writing code, read the relevant guide under `node_modules/next/dist/docs/`. See [AGENTS.md](AGENTS.md).
-
 ---
 
 ## Features
