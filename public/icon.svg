@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="RIVA HNTR Technologies">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6366f1"/>
+      <stop offset="0.55" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#g)"/>
+  <!-- Sun -->
+  <circle cx="352" cy="150" r="40" fill="#fde68a"/>
+  <g stroke="#fde68a" stroke-width="14" stroke-linecap="round">
+    <line x1="352" y1="72" x2="352" y2="92"/>
+    <line x1="352" y1="208" x2="352" y2="228"/>
+    <line x1="274" y1="150" x2="294" y2="150"/>
+    <line x1="410" y1="150" x2="430" y2="150"/>
+    <line x1="297" y1="95" x2="311" y2="109"/>
+    <line x1="393" y1="191" x2="407" y2="205"/>
+    <line x1="407" y1="95" x2="393" y2="109"/>
+    <line x1="311" y1="191" x2="297" y2="205"/>
+  </g>
+  <!-- Laptop -->
+  <rect x="140" y="228" width="232" height="150" rx="16" fill="#0f172a"/>
+  <rect x="160" y="248" width="192" height="110" rx="6" fill="#e2e8f0"/>
+  <path d="M112 388 h288 a24 24 0 0 1 24 24 v6 a12 12 0 0 1 -12 12 H100 a12 12 0 0 1 -12 -12 v-6 a24 24 0 0 1 24 -24 Z" fill="#cbd5e1"/>
+</svg>
