@@ -94,10 +94,10 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/shop"
+              href="/shop?dept=computers"
               className="px-6 py-3 rounded-lg bg-indigo-500 hover:bg-indigo-600 font-semibold text-white shadow-lg hover:shadow-indigo-500/20 transition-all flex items-center justify-center gap-2"
             >
-              Browse Laptop Shop
+              Shop Computers
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
@@ -133,7 +133,7 @@ export default function Home() {
               </p>
             </div>
             <Link
-              href="/shop"
+              href="/shop?dept=computers"
               className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 mt-4 group"
             >
               Enter Store

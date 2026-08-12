@@ -84,9 +84,18 @@ export default function ShopPage() {
 
   // Filters State
   const [search, setSearch] = useState('');
+  const [department, setDepartment] = useState<DeptFilter>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedCondition, setSelectedCondition] = useState<string>('All');
   const [maxPrice, setMaxPrice] = useState<number>(1500000);
+
+  // Preselect the department from the `?dept=` query (e.g. links from the nav).
+  useEffect(() => {
+    const dept = new URLSearchParams(window.location.search).get('dept');
+    if (dept === 'computers' || dept === 'solar') {
+      setDepartment(dept);
+    }
+  }, []);
 
   useEffect(() => {
     async function loadProducts() {
@@ -115,7 +124,24 @@ export default function ShopPage() {
     loadProducts();
   }, []);
 
-  const categories = ['All', 'Laptops', 'Accessories', 'Solar Inverters', 'Batteries'];
+  const departmentTabs: { label: string; value: DeptFilter }[] = [
+    { label: 'All Departments', value: 'all' },
+    { label: DEPARTMENTS.computers.label, value: 'computers' },
+    { label: DEPARTMENTS.solar.label, value: 'solar' },
+  ];
+
+  const changeDepartment = (value: DeptFilter) => {
+    setDepartment(value);
+    setSelectedCategory('All'); // avoid a stale category from the other department
+  };
+
+  // Products in the selected department drive both the grid and the category list.
+  const departmentProducts = products.filter(
+    (prod) => department === 'all' || departmentOf(prod.category) === department
+  );
+
+  // Category options reflect what actually exists in the current department.
+  const categories = ['All', ...Array.from(new Set(departmentProducts.map((p) => p.category)))];
   const conditions = [
     { label: 'All Conditions', value: 'All' },
     { label: 'Brand New', value: 'NEW' },
@@ -124,8 +150,8 @@ export default function ShopPage() {
     { label: 'Local Second Hand', value: 'SECOND_HAND' },
   ];
 
-  // Filtering Logic
-  const filteredProducts = products.filter((prod) => {
+  // Filtering Logic (scoped to the selected department)
+  const filteredProducts = departmentProducts.filter((prod) => {
     const matchesSearch = prod.title.toLowerCase().includes(search.toLowerCase());
     const matchesCategory =
       selectedCategory === 'All' || prod.category.toLowerCase() === selectedCategory.toLowerCase();
@@ -139,9 +165,35 @@ export default function ShopPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8 space-y-8">
       {/* Page Title */}
-      <div>
-        <span className="text-xs font-bold uppercase text-indigo-400 tracking-wider">Catalog</span>
-        <h1 className="text-3xl font-extrabold text-slate-100 mt-1">Shop Equipment & Accessories</h1>
+      <div className="space-y-4">
+        <div>
+          <span className="text-xs font-bold uppercase text-indigo-400 tracking-wider">Catalog</span>
+          <h1 className="text-3xl font-extrabold text-slate-100 mt-1">Shop Equipment & Accessories</h1>
+          <p className="text-sm text-slate-400 mt-1">
+            {department === 'computers'
+              ? 'Laptops, desktops and computer accessories.'
+              : department === 'solar'
+              ? 'Solar inverters, batteries, panels and accessories.'
+              : 'Computers & accessories and solar equipment — all in one place.'}
+          </p>
+        </div>
+
+        {/* Department tabs — keep computers separate from solar */}
+        <div className="flex flex-wrap gap-2">
+          {departmentTabs.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => changeDepartment(tab.value)}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${
+                department === tab.value
+                  ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30'
+                  : 'text-slate-300 border-slate-800 hover:bg-slate-900 hover:text-white'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Grid: Filters (Sidebar) + Product Grid */}
