@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { createServerSupabase } from '@/lib/supabase/server';
 
 // Monnify Token Cache
 let cachedToken: string | null = null;
@@ -62,11 +63,25 @@ export async function POST(req: NextRequest) {
     const rand = Math.floor(10000 + Math.random() * 90000);
     const trackingNumber = `ORD-${year}-${rand}`;
 
+    // If the shopper is signed in, link the order to their account so it shows
+    // up under /account. Guest checkout still works — customer_id stays null.
+    let customerId: string | null = null;
+    try {
+      const supabase = await createServerSupabase();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      customerId = user?.id ?? null;
+    } catch {
+      // No session / cookie access — proceed as a guest order.
+    }
+
     // Insert Order as pending_payment
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
         tracking_number: trackingNumber,
+        customer_id: customerId,
         guest_info: { name, email, phone, delivery_address: deliveryAddress, items },
         total_amount: totalAmount,
         payment_gateway: paymentGateway,
