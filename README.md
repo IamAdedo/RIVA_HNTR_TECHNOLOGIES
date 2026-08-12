@@ -13,6 +13,7 @@ A premium, hybrid Next.js web platform for **RIVA HNTR Technologies**, a laptop 
   - **Monnify** (virtual account bank transfer) for high-ticket orders **> ₦500,000**
 - **Idempotent payment webhooks** — Signature-verified Paystack and Monnify webhook endpoints update order status, write to the audit log, and decrement product stock.
 - **Universal tracking hub** — Public lookup by tracking/ticket number + phone, rendering a visual step-by-step timeline for orders, repairs, and solar projects.
+- **Customer accounts** — Email/password **and Google** sign-in (Supabase Auth, cookie-based SSR sessions). A protected `/account` area shows the customer's orders, repair & solar bookings, a saved address book, and profile/password settings. Orders, repairs, and solar leads placed while signed in are linked to the account so history populates automatically — guest flows still work unchanged. See [Authentication](#authentication).
 - **Repair intake** — Generates repair tickets and records fault details.
 - **Solar load calculator** — Appliance-based demand calculator that captures solar installation leads.
 - **Contextual WhatsApp widget** — Floating widget that pre-fills a message based on the current page (shop, track, solar, repairs).
@@ -28,6 +29,7 @@ A premium, hybrid Next.js web platform for **RIVA HNTR Technologies**, a laptop 
 | Icons | `lucide-react` |
 | State | `zustand` (persistent cart store) |
 | Backend / DB | [Supabase](https://supabase.com) (PostgreSQL, RLS, auth-sync triggers) |
+| Auth | Supabase Auth via `@supabase/ssr` — cookie-based sessions, email/password + Google OAuth |
 | Payments | Paystack + Monnify |
 | SEO | Next.js Metadata API, `robots.ts` / `sitemap.ts` / `manifest.ts`, `next/og` OG image, JSON-LD structured data |
 
@@ -41,6 +43,12 @@ app/
     repairs/              # Repair intake form (+ layout.tsx metadata)
     solar/                # Solar load calculator & lead form (+ layout.tsx metadata)
     track/                # Universal tracking hub (+ layout.tsx metadata)
+  account/                # Protected customer area (server-gated; noindex)
+                          #   overview · orders · bookings · addresses · settings
+  login/  signup/         # Auth pages (email/password + Google; noindex layouts)
+  auth/
+    callback/             # OAuth / email-confirmation PKCE code exchange → route.ts
+    signout/              # POST sign-out → route.ts
   admin/                  # RBAC admin suite (dashboard, inventory, repairs, solar)
   api/
     checkout/             # Order creation + Monnify transfer setup
@@ -53,12 +61,16 @@ app/
   manifest.ts             # PWA manifest                          → /manifest.webmanifest
   opengraph-image.tsx     # Generated 1200×630 OG image (next/og) → /opengraph-image
   layout.tsx  page.tsx  globals.css
+proxy.ts                  # Next 16 middleware (renamed → `proxy`): refreshes the
+                          # Supabase session + gates /account. See Authentication.
 components/               # Header, Footer, ProductCard, ConditionBadge,
                           # InspectionChecklist, WhatsAppWidget, JsonLd
 lib/
   siteConfig.ts           # SEO single source of truth: NAP, departments, JSON-LD builders
   products.ts             # Shared product catalog (powers sitemap + PDP metadata)
-  supabase.ts             # Browser Supabase client (anon key)
+  format.ts               # Naira / date formatting + status badge helpers (account UI)
+  supabase.ts             # Browser Supabase client (cookie-based session, anon key)
+  supabase/server.ts      # Server Supabase client factory (reads/writes auth cookies)
   supabaseAdmin.ts        # Server-only client (service role key)
   paymentProcessor.ts     # Order fulfillment: verify, audit, decrement stock
   store/cartStore.ts      # Zustand cart + guest-info store
@@ -121,13 +133,16 @@ NEXT_PUBLIC_TWITTER_HANDLE=@rivahntr
 
 ### 3. Set up the database
 
-Run the migration against your Supabase project. It creates all tables, enums, RLS policies, the auth→`profiles` sync trigger, and seed data:
+Run the migrations against your Supabase project, in order. The first creates all core tables, enums, RLS policies, the auth→`profiles` sync trigger, and seed data; the second adds the customer address book:
 
 ```
 supabase/migrations/20260811_initial_schema.sql
+supabase/migrations/20260812_addresses.sql
 ```
 
-Apply it via the Supabase SQL Editor or the Supabase CLI.
+Apply them via the Supabase SQL Editor or the Supabase CLI.
+
+To enable **Google sign-in**, also turn on the Google provider under **Authentication → Providers** in the Supabase dashboard and register your callback URL (`https://<your-domain>/auth/callback`, plus `http://localhost:3000/auth/callback` for local dev) in both Supabase and the Google Cloud OAuth consent screen. Email/password works with no extra configuration.
 
 ### 4. Run the development server
 
@@ -155,9 +170,40 @@ Core tables (see the migration for full definitions, RLS, and seed data):
 - **`orders`** — orders with `order_status` lifecycle and tracking numbers.
 - **`repair_tickets`** — repairs with `repair_status` lifecycle.
 - **`solar_projects`** — solar leads/projects with `solar_status` lifecycle.
+- **`addresses`** — customer address book (`20260812_addresses.sql`); RLS-scoped strictly to the owner (`customer_id = auth.uid()`).
 - **`status_audit_logs`** — append-only audit trail for status transitions.
 
 **Roles (`user_role`):** `super_admin`, `sales_manager`, `repair_tech`, `solar_manager`, `customer`.
+
+`orders`, `repair_tickets`, and `solar_projects` each carry a nullable `customer_id` FK to `profiles`. It's stamped automatically when the record is created by a signed-in user (guest records leave it null), which is what populates the `/account` history. Self-read RLS on those tables (`customer_id = auth.uid()`) means a customer only ever sees their own records.
+
+## Authentication
+
+Customer authentication is built on **Supabase Auth** with **cookie-based SSR sessions** (via `@supabase/ssr`), so the same session is readable by Client Components, Server Components, route handlers, and the request proxy.
+
+**Routes**
+
+| Route | Purpose |
+|---|---|
+| `/login` | Email/password + "Continue with Google" sign-in |
+| `/signup` | Create account (full name, phone, email, password) + Google |
+| `/account` | Overview — activity summary across orders/repairs/solar |
+| `/account/orders` | The customer's orders, each deep-linking into `/track` |
+| `/account/bookings` | The customer's repair tickets and solar projects |
+| `/account/addresses` | Address book — add / edit / delete / set-default (client CRUD) |
+| `/account/settings` | Update profile (name, phone) and change password |
+| `/auth/callback` | PKCE code exchange for Google OAuth **and** email confirmation |
+| `/auth/signout` | `POST` sign-out (used by the account shell's form) |
+
+**How it works**
+
+- **Clients** — [lib/supabase.ts](lib/supabase.ts) is a `createBrowserClient` (cookie session, used by all Client Components); [lib/supabase/server.ts](lib/supabase/server.ts) exposes `createServerSupabase()` (a `createServerClient` bound to `await cookies()`) for server code.
+- **`proxy.ts`** — ⚠️ In **Next.js 16 the middleware file was renamed to `proxy`**: this project uses `proxy.ts` at the repo root exporting `proxy` (not `middleware.ts` / `middleware`). It refreshes the Supabase session on every request and redirects unauthenticated visits to `/account/*` to `/login?redirect=…`. Most online Supabase SSR guides still say `middleware.ts` — don't follow that verbatim here.
+- **Profile creation** — signup passes `full_name` / `phone_number` in `options.data`; the `handle_new_user()` DB trigger creates the `profiles` row automatically. The app never inserts into `profiles` directly.
+- **Account linking** — when a signed-in user places an order/repair/solar request, its `customer_id` is stamped so it appears under `/account`. Guest checkout/repair/solar continue to work with `customer_id` left null.
+- **Google OAuth** — requires the Google provider enabled and the `/auth/callback` redirect URL registered in the Supabase dashboard (see [Set up the database](#3-set-up-the-database)); it can't be verified from code alone.
+
+No new environment variables are required — auth reuses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
 ## SEO
 
@@ -171,7 +217,7 @@ The site ships a comprehensive, best-practice SEO foundation aimed at maximum or
 - **Structured data (JSON-LD)** via [components/JsonLd.tsx](components/JsonLd.tsx):
   - Site-wide: `Organization`, `LocalBusiness`/`Store`, `WebSite` (with `SearchAction`) — rendered in the root layout.
   - `Product` + `BreadcrumbList` on product detail pages; `Service` on the solar and repairs pages.
-- **Crawler & discovery files**: `app/robots.ts` → `/robots.txt` (allows public routes, disallows `/admin`, `/api/`, `/cart`, `/checkout`; points to the sitemap), `app/sitemap.ts` → `/sitemap.xml` (static routes + one entry per product, with images), `app/manifest.ts` → `/manifest.webmanifest`.
+- **Crawler & discovery files**: `app/robots.ts` → `/robots.txt` (allows public routes, disallows `/admin`, `/api/`, `/cart`, `/checkout`, and the private `/account`, `/login`, `/signup`, `/auth/` routes; points to the sitemap), `app/sitemap.ts` → `/sitemap.xml` (static routes + one entry per product, with images), `app/manifest.ts` → `/manifest.webmanifest`.
 - **Social image**: `app/opengraph-image.tsx` generates a branded 1200×630 image with `next/og`; the Twitter card reuses it via `metadata.twitter.images`.
 
 **Maintaining SEO**
